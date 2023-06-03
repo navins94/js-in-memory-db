@@ -1,3 +1,5 @@
+const _ = require("lodash");
+
 class Record {
   constructor(data) {
     this.data = data;
@@ -56,6 +58,14 @@ class Table {
     });
   }
 
+  getAll() {
+    return this.records;
+  }
+
+  filter(predicate) {
+    return this.records.filter(predicate);
+  }
+
   createIndex(field) {
     if (!this.indexes[field]) {
       this.indexes[field] = {};
@@ -86,19 +96,12 @@ class Table {
       }
     }
   }
-
-  getAll() {
-    return this.records;
-  }
-
-  filter(predicate) {
-    return this.records.filter(predicate);
-  }
 }
 
 class Database {
   constructor() {
     this.tables = new Map();
+    this.transactionStack = [];
     this.isClosed = false;
   }
 
@@ -139,8 +142,44 @@ class Database {
     this.tables.delete(tableName);
   }
 
+  beginTransaction() {
+    if (this.isClosed) {
+      throw new Error("Cannot perform operations on a closed database.");
+    }
+
+    const snapshot = _.cloneDeep(Array.from(this.tables));
+    this.transactionStack.push(snapshot);
+  }
+
+  commit() {
+    if (this.isClosed) {
+      throw new Error("Cannot perform operations on a closed database.");
+    }
+
+    if (this.transactionStack.length === 0) {
+      throw new Error("No transaction to commit.");
+    }
+
+    this.transactionStack.pop();
+  }
+
+  rollback() {
+    if (this.isClosed) {
+      throw new Error("Cannot perform operations on a closed database.");
+    }
+
+    if (this.transactionStack.length > 0) {
+      this.tables = new Map(
+        _.cloneDeep(this.transactionStack[this.transactionStack.length - 1])
+      );
+    } else {
+      throw new Error("No transaction to rollback.");
+    }
+  }
+
   close() {
     this.tables.clear();
+    this.transactionStack = [];
     this.isClosed = true;
   }
 

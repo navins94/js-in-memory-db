@@ -55,6 +55,34 @@ describe("Database", () => {
     expect(records.length).toEqual(0);
   });
 
+  it("should rollback transaction in case of error", () => {
+    try {
+      db.beginTransaction();
+      db.insert("users", { id: 1, name: "John", email: "john@example.com" });
+      throw new Error("Unexpected error");
+    } catch (error) {
+      db.rollback();
+    }
+
+    const usersTable = db.getTable("users");
+    const records = usersTable.getAll();
+    expect(records.length).toEqual(0); // If rollback is working, there should be no records
+  });
+
+  it("should not affect committed data", () => {
+    db.beginTransaction();
+    try {
+      db.insert("users", { id: 1, name: "John", email: "john@example.com" });
+      db.commit();
+    } catch (error) {
+      db.rollback();
+    }
+
+    const usersTable = db.getTable("users");
+    const records = usersTable.getAll();
+    expect(records.length).toEqual(1);
+  });
+
   it("should create index and retrieve record by index", () => {
     db.insert("users", { id: 1, name: "John", email: "john@example.com" });
     const usersTable = db.getTable("users");

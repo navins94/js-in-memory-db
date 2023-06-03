@@ -83,6 +83,27 @@ users.delete({ email: "aliceNew@example.com" });
 const deletedUser = users.find({ email: "aliceNew@example.com" }); // This will return an empty array as the user has been deleted
 ```
 
+## Transactions
+
+The Database class supports transactions, which allow you to make a group of changes that can be committed all at once, or rolled back if something goes wrong. To use transactions, use the `beginTransaction`, `commit`, and `rollback` methods.
+
+```javascript
+db.beginTransaction();
+
+try {
+  db.insert("users", { name: "Alice", email: "alice@example.com" });
+  db.insert("users", { name: "Bob", email: "bob@example.com" });
+
+  // If everything is okay, commit the changes
+  db.commit();
+} catch (error) {
+  // If something went wrong, rollback the changes
+  db.rollback();
+}
+
+//In this example, if an error occurs when inserting either Alice or Bob, neither will be inserted, and the database will remain in its original state.
+```
+
 ## Note
 
 This is an in-memory database, and data will not persist when the application is closed. It's primarily for development purposes and not suitable for production use.
