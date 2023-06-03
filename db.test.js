@@ -55,6 +55,37 @@ describe("Database", () => {
     expect(records.length).toEqual(0);
   });
 
+  it("should create index and retrieve record by index", () => {
+    db.insert("users", { id: 1, name: "John", email: "john@example.com" });
+    const usersTable = db.getTable("users");
+    usersTable.createIndex("id");
+    const records = usersTable.find({ id: 1 });
+    expect(records.length).toEqual(1);
+    expect(records[0].data.name).toEqual("John");
+  });
+
+  it("should update index when new record is inserted", () => {
+    db.insert("users", { id: 1, name: "John", email: "john@example.com" });
+    const usersTable = db.getTable("users");
+    usersTable.createIndex("id");
+    db.insert("users", { id: 2, name: "Jane", email: "jane@example.com" });
+
+    const records = usersTable.find({ id: 2 });
+    expect(records.length).toEqual(1);
+    expect(records[0].data.name).toEqual("Jane");
+  });
+
+  it("should update index when a record is deleted", () => {
+    db.insert("users", { id: 1, name: "John", email: "john@example.com" });
+    db.insert("users", { id: 2, name: "Jane", email: "jane@example.com" });
+    const usersTable = db.getTable("users");
+    usersTable.createIndex("id");
+    usersTable.delete({ id: 1 });
+
+    const records = usersTable.find({ id: 1 });
+    expect(records.length).toEqual(0);
+  });
+
   it("should not allow operations after close", () => {
     db.close();
 

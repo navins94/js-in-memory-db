@@ -10,14 +10,21 @@ class Table {
     this.name = name;
     this.columns = columns;
     this.records = [];
+    this.indexes = {}; // Track indexes by field name
   }
 
   insert(recordData) {
     const record = new Record(recordData);
     this.records.push(record);
+    this.updateIndexes(record);
   }
 
   find(query) {
+    const indexField = Object.keys(query)[0];
+    if (this.indexes[indexField]) {
+      return this.indexes[indexField][query[indexField]] || [];
+    }
+
     return this.records.filter((record) => {
       for (let key in query) {
         if (record.data[key] !== query[key]) {
@@ -33,6 +40,7 @@ class Table {
     foundRecords.forEach((record) => {
       Object.assign(record.data, updates);
       record.isNew = false; // Mark the record as updated
+      this.updateIndexes(record); // update index on update
     });
   }
 
@@ -42,9 +50,41 @@ class Table {
       const index = this.records.indexOf(record);
       if (index !== -1) {
         this.records.splice(index, 1);
+        this.updateIndexes(record, true); // indicate deletion in updateIndexes
       }
       record.isNew = false; // Mark the record as not new
     });
+  }
+
+  createIndex(field) {
+    if (!this.indexes[field]) {
+      this.indexes[field] = {};
+
+      this.records.forEach((record) => {
+        const value = record.data[field];
+        if (!this.indexes[field][value]) {
+          this.indexes[field][value] = [];
+        }
+        this.indexes[field][value].push(record);
+      });
+    }
+  }
+
+  updateIndexes(record, isDelete = false) {
+    for (let field in this.indexes) {
+      const value = record.data[field];
+      if (isDelete) {
+        const indexInField = this.indexes[field][value].indexOf(record);
+        if (indexInField !== -1) {
+          this.indexes[field][value].splice(indexInField, 1);
+        }
+      } else {
+        if (!this.indexes[field][value]) {
+          this.indexes[field][value] = [];
+        }
+        this.indexes[field][value].push(record);
+      }
+    }
   }
 
   getAll() {

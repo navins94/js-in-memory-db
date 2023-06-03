@@ -64,6 +64,25 @@ users.delete({ email: "newAlice@example.com" });
 db.close();
 ```
 
+## Indexing
+
+In order to speed up find operations, you can create an index on a field. To create an index:
+
+```javascript
+//This will create an index on the email field, speeding up any subsequent find operations involving the email field:
+users.createIndex("email");
+
+// Any changes made to a record's indexed field will automatically update the index:
+const alicesEmail = users.find({ email: "alice@example.com" });
+
+users.update({ name: "Alice" }, { email: "aliceNew@example.com" });
+const alicesNewEmail = users.find({ email: "aliceNew@example.com" }); // This will be faster than before
+
+//When a record is deleted, its entry in the index is also removed:
+users.delete({ email: "aliceNew@example.com" });
+const deletedUser = users.find({ email: "aliceNew@example.com" }); // This will return an empty array as the user has been deleted
+```
+
 ## Note
 
 This is an in-memory database, and data will not persist when the application is closed. It's primarily for development purposes and not suitable for production use.
